@@ -62,6 +62,12 @@
             height: 36px;
             display: block;
         }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
         .badge-ca {
             background: #1a73e8;
             color: white;
@@ -73,6 +79,25 @@
             align-items: center;
             gap: 8px;
         }
+        .logout-btn {
+            background: transparent;
+            color: #5f6368;
+            border: 1px solid #dadce0;
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .logout-btn:hover {
+            background: #f1f3f4;
+            border-color: #c5221f;
+            color: #c5221f;
+        }
 
         /* main container */
         .dashboard-container {
@@ -83,7 +108,7 @@
             width: 100%;
         }
 
-        /* header with add customer + global search (optional) */
+        /* header with add customer */
         .header-row {
             display: flex;
             align-items: center;
@@ -374,6 +399,7 @@
             .header-row { flex-direction: column; align-items: start; }
             .section-search input { width: 180px; }
             .section-search input:focus { width: 220px; }
+            .nav-right { gap: 10px; }
         }
     </style>
 </head>
@@ -395,7 +421,10 @@
             </div>
             <span>Transaction Bridge</span>
         </a>
-        <div class="badge-ca">👤 CA · David Miller</div>
+        <div class="nav-right">
+            <div class="badge-ca">👤 CA · David Miller</div>
+            <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
+        </div>
     </nav>
 
     <main class="dashboard-container">
@@ -586,6 +615,14 @@
             document.getElementById('pendingCount').innerText = transactions.filter(t => t.status === 'Pending').length;
             document.getElementById('totalTransactions').innerText = transactions.length;
         }
+
+        // ---------- LOGOUT FUNCTION ----------
+        window.handleLogout = function() {
+            // In a real app, you'd redirect to login page
+            // alert('👋 Logged out successfully! (Demo - would redirect to landing page)');
+            // Simulate redirect (you can replace with actual link)
+            window.location.href = "{% url 'logout' %}"; // placeholder
+        };
 
         // ---------- CARD CLICK: show section + scroll to it ----------
         function showSectionAndScroll(sectionId) {

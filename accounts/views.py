@@ -1,7 +1,7 @@
 from urllib import request
-
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from .models import User
 # Create your views here.
 
@@ -31,9 +31,15 @@ def landing(request):
     return render(request, "landing.html")
 
 
+@login_required
 def ca_dashboard(request):
     return render(request, "ca_dashboard.html")
 
 
+@login_required
 def customer_dashboard(request):
     return render(request, "customer_dashboard.html")
+
+def logout_view(request):
+    logout(request)
+    return redirect("landing")   # redirect to landing page
