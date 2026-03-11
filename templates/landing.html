@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Bridge - Financial Transaction Management Platform</title>
+    
+    <!-- Custom Favicon - replaces the Google G -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-8 -8 16 16'%3E%3Cpath d='M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88' stroke='%231a73e8' stroke-width='0.5' fill='none'/%3E%3Cpath d='M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71' stroke='%23ea4335' stroke-width='0.5' fill='none'/%3E%3Cpath d='M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47' stroke='%23fbbc04' stroke-width='0.5' fill='none'/%3E%3Cpath d='M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71' stroke='%2334a853' stroke-width='0.5' fill='none'/%3E%3Cpath d='M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47' stroke='%234285f4' stroke-width='0.5' fill='none'/%3E%3Cpath d='M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47' stroke='%23ea4335' stroke-width='0.5' fill='none'/%3E%3Cpath d='M -0.96 -3.63 L 1.02 -5.71' stroke='%23fbbc04' stroke-width='0.5' fill='none'/%3E%3Cpath d='M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39' stroke='%2334a853' stroke-width='0.5' stroke-dasharray='0.5,0.3' fill='none'/%3E%3Cpath d='M 5.13 4.47 L 5.13 4.53' stroke='%234285f4' stroke-width='0.5' fill='none'/%3E%3C/svg%3E">
+    
+    <!-- Fallback favicon for browsers that don't support SVG favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA3ElEQVR4AcXBsU0DQQwF0JMqKWiJkrL+A9FQ0cACUTAEzEANi+lo2IYq0SCFCZJzseMrneLrL8m/j/nPy1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1LKUsq/y1L+7Qc3ZR4dY6T0vgAAAABJRU5ErkJggg==">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #fff;
+            color: #202124;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.1), 0 1px 3px 1px rgba(60,64,67,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 500;
+            color: #202124;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 36px;
+            height: 36px;
+            display: block;
+        }
+
+        .login-btn {
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Google Sans', sans-serif;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .login-btn:hover {
+            background: #1765cc;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            transform: translateY(-1px);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 60px;
+            padding: 80px 24px 60px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+            overflow: hidden;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .hero-content h1 {
+            font-size: 52px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 20px;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-content .text-highlight {
+            display: inline-block;
+            background: linear-gradient(90deg, #4285f4 0%, #ea4335 25%, #fbbc04 50%, #34a853 75%, #4285f4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 500;
+        }
+
+        .hero-content p {
+            font-size: 18px;
+            color: #5f6368;
+            margin-bottom: 32px;
+            line-height: 1.6;
+            max-width: 500px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Google Sans', sans-serif;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .btn-primary:hover {
+            background: #1765cc;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #1a73e8;
+            border: 1px solid #dadce0;
+            padding: 12px 32px;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Google Sans', sans-serif;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+            border-color: #1a73e8;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .hero-image {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .hero-image:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header .subtitle {
+            color: #1a73e8;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .section-header h2 {
+            font-size: 44px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-header p {
+            font-size: 18px;
+            color: #5f6368;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+            margin-bottom: 80px;
+        }
+
+        .feature-card {
+            background: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+            transform: translateY(-8px);
+            border-color: transparent;
+        }
+
+        .feature-image {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .feature-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .feature-image img {
+            transform: scale(1.1);
+        }
+
+        .feature-content {
+            padding: 24px;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .icon-blue { background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%); color: #fff; }
+        .icon-red { background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); color: #fff; }
+        .icon-yellow { background: linear-gradient(135deg, #fbbc04 0%, #f9ab00 100%); color: #fff; }
+        .icon-green { background: linear-gradient(135deg, #34a853 0%, #0f9d58 100%); color: #fff; }
+
+        .feature-content h3 {
+            font-size: 20px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 12px;
+        }
+
+        .feature-content p {
+            font-size: 15px;
+            color: #5f6368;
+            line-height: 1.6;
+        }
+
+        /* Stats Section */
+        .stats {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            padding: 60px 24px;
+            color: #fff;
+            margin: 80px 0;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 48px;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .stat-item p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 24px;
+        }
+
+        .cta-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e8eaed 100%);
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4285f4 0%, #ea4335 25%, #fbbc04 50%, #34a853 75%, #4285f4 100%);
+        }
+
+        .cta-card h2 {
+            font-size: 40px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 16px;
+        }
+
+        .cta-card p {
+            font-size: 18px;
+            color: #5f6368;
+            margin-bottom: 32px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        .footer {
+            background: #f8f9fa;
+            padding: 60px 24px 40px;
+            border-top: 1px solid #e8eaed;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 8px;
+        }
+
+        .footer-brand p {
+            color: #5f6368;
+            font-size: 14px;
+            line-height: 1.6;
+            max-width: 300px;
+        }
+
+        .footer-links h4 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 16px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: #5f6368;
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #1a73e8;
+        }
+
+        .footer-bottom {
+            padding-top: 24px;
+            border-top: 1px solid #e8eaed;
+            text-align: center;
+        }
+
+        .footer-bottom p {
+            color: #5f6368;
+            font-size: 13px;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Modal */
+        .modal {
+            background: #fff;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12), 0 5px 5px -3px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4285f4 0%, #ea4335 25%, #fbbc04 50%, #34a853 75%, #4285f4 100%);
+        }
+
+        @keyframes slideUp {
+            from { 
+                transform: translateY(40px) scale(0.95); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateY(0) scale(1); 
+                opacity: 1; 
+            }
+        }
+
+        .modal-header {
+            padding: 40px 40px 24px;
+            text-align: center;
+        }
+
+        .modal-logo {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-logo svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .modal-logo span {
+            font-size: 24px;
+            font-weight: 500;
+            color: #202124;
+            font-family: 'Google Sans', sans-serif;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            font-size: 16px;
+            color: #5f6368;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #5f6368;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .modal-body {
+            padding: 0 40px 40px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            transition: all 0.2s;
+            background: #fff;
+        }
+
+        .input-wrapper input:hover {
+            border-color: #5f6368;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: 8px;
+        }
+
+        .forgot-password a {
+            color: #1a73e8;
+            font-size: 14px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-full {
+            width: 100%;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Google Sans', sans-serif;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .btn-full:hover {
+            background: #1765cc;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+        }
+
+        .btn-full:active {
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #1a73e8;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 24px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            font-family: 'Google Sans', sans-serif;
+        }
+
+        .back-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .otp-input {
+            text-align: center;
+            font-size: 24px !important;
+            letter-spacing: 8px;
+            font-weight: 500;
+        }
+
+        .otp-timer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #ea4335;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .hero-content h1 {
+                font-size: 40px;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 12px 20px;
+            }
+
+            .hero {
+                padding: 60px 20px 40px;
+            }
+
+            .hero-content h1 {
+                font-size: 32px;
+            }
+
+            .hero-content p {
+                font-size: 16px;
+            }
+
+            .section-header h2 {
+                font-size: 32px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                margin: 20px;
+            }
+
+            .modal-header,
+            .modal-body {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .cta-card {
+                padding: 40px 24px;
+            }
+
+            .cta-card h2 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation with custom logo -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="logo">
+            <div class="logo-icon">
+                <!-- Custom logo from logo.jpg (line art) -->
+                <svg viewBox="-8 -8 16 16" width="36" height="36" fill="none" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                    <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                    <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                    <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                    <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                    <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                    <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                    <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                    <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                </svg>
+            </div>
+            <span>Transaction Bridge</span>
+        </a>
+        <button class="login-btn" onclick="openLoginModal()">Login</button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1>Streamline your finances with <span class="text-highlight">Transaction Bridge</span></h1>
+                <p>The ultimate platform connecting Chartered Accountants and Companies for seamless financial transaction management and approval workflows.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="openLoginModal()">Get Started</button>
+                    <button class="btn-secondary">Learn More</button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://images.unsplash.com/photo-1739298061740-5ed03045b280?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHRlYW0lMjBtZWV0aW5nJTIwY29sbGFib3JhdGlvbnxlbnwxfHx8fDE3NzMxMjI3Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="Business Team Collaboration">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="section-header">
+            <div class="subtitle">POWERFUL FEATURES</div>
+            <h2>Everything you need to succeed</h2>
+            <p>Built specifically for Chartered Accountants and their client companies to collaborate efficiently and manage transactions seamlessly.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-image">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjBkYXNoYm9hcmQlMjBhbmFseXRpY3N8ZW58MXx8fHwxNzczMTA1MDE3fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Transaction Management">
+                </div>
+                <div class="feature-content">
+                    <div class="feature-icon icon-blue">📊</div>
+                    <h3>Transaction Management</h3>
+                    <p>Record, edit, and manage daily financial transactions with ease. Complete visibility from creation to approval.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-image">
+                    <img src="https://images.unsplash.com/photo-1713947503588-8ff8196dc4a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhY2NvdW50YW50JTIwd29ya2luZyUyMGNvbXB1dGVyfGVufDF8fHx8MTc3MzIwNzk4OHww&ixlib=rb-4.1.0&q=80&w=1080" alt="Review & Approval">
+                </div>
+                <div class="feature-content">
+                    <div class="feature-icon icon-red">✓</div>
+                    <h3>Review & Approval Workflow</h3>
+                    <p>Streamlined process for CAs to review, approve, or reject transactions with detailed feedback and audit trails.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-image">
+                    <img src="https://images.unsplash.com/photo-1745847768380-2caeadbb3b71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGhhbmRzaGFrZSUyMHBhcnRuZXJzaGlwfGVufDF8fHx8MTc3MzE4MDQzNXww&ixlib=rb-4.1.0&q=80&w=1080" alt="Multi-Company Management">
+                </div>
+                <div class="feature-content">
+                    <div class="feature-icon icon-yellow">👥</div>
+                    <h3>Multi-Company Support</h3>
+                    <p>Manage multiple client companies from a single dashboard with complete data isolation and security.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-image">
+                    <img src="https://images.unsplash.com/photo-1718220216044-006f43e3a9b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjB3b3Jrc3BhY2V8ZW58MXx8fHwxNzczMTI3MTk1fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Advanced Reporting">
+                </div>
+                <div class="feature-content">
+                    <div class="feature-icon icon-green">📈</div>
+                    <h3>Advanced Reporting</h3>
+                    <p>Generate customizable reports with selectable fields. Export to Excel or PDF for comprehensive analysis.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-image">
+                    <img src="https://images.unsplash.com/photo-1767972464040-8bfee42d7bed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYXRhJTIwc2VjdXJpdHklMjB0ZWNobm9sb2d5fGVufDF8fHx8MTc3MzIwNzk4OXww&ixlib=rb-4.1.0&q=80&w=1080" alt="Data Security">
+                </div>
+                <div class="feature-content">
+                    <div class="feature-icon icon-blue">🔒</div>
+                    <h3>Bank-Level Security</h3>
+                    <p>Role-based access control, encrypted data, and secure authentication to protect sensitive information.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-image">
+                    <img src="https://images.unsplash.com/photo-1739298061740-5ed03045b280?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHRlYW0lMjBtZWV0aW5nJTIwY29sbGFib3JhdGlvbnxlbnwxfHx8fDE3NzMxMjI3Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="Real-time Collaboration">
+                </div>
+                <div class="feature-content">
+                    <div class="feature-icon icon-red">⚡</div>
+                    <h3>Real-time Collaboration</h3>
+                    <p>Instant notifications on status changes, approvals, and rejections for seamless team collaboration.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+   
+    <!-- Footer with custom logo -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#" class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="-8 -8 16 16" width="36" height="36" fill="none" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                                <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                                <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                                <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                                <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                                <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                                <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                                <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                                <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                            </svg>
+                        </div>
+                        <span>Transaction Bridge</span>
+                    </a>
+                    <p>Connecting Chartered Accountants and Companies for seamless financial transaction management.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Demo</a></li>
+                        <li><a href="#">Updates</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">API</a></li>
+                        <li><a href="#">Status</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Privacy</a></li>
+                        <li><a href="#">Terms</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 Transaction Bridge. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" id="loginModal">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <div id="loginForm">
+                <div class="modal-header">
+                    <div class="modal-logo">
+                        <!-- Using the same custom logo from navbar -->
+                        <svg viewBox="-8 -8 16 16" width="40" height="40" fill="none" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                            <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                            <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                            <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                            <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                            <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                            <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                            <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                            <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                        </svg>
+                        <span>Bridge</span>
+                    </div>
+                    <h2>Welcome back</h2>
+                    <p>Sign in to your account</p>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{% url 'landing' %}"> 
+                        {% csrf_token %} 
+                        <div class="form-group">
+                            <label for="email">User ID</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="email" name="username" placeholder="Enter your username" required autocomplete="username">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                            </div>
+                            <div class="forgot-password">
+                                <a href="#" onclick="showForgotPassword(event)">Forgot password?</a>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-full">Sign In</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgotPasswordForm" style="display: none;">
+                <div class="modal-header">
+                    <div class="modal-logo">
+                        <svg viewBox="-8 -8 16 16" width="40" height="40" fill="none" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                            <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                            <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                            <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                            <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                            <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                            <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                            <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                            <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                        </svg>
+                        <span>Transaction Bridge</span>
+                    </div>
+                    <h2>Reset Password</h2>
+                    <p>Enter your email to receive OTP</p>
+                </div>
+                <div class="modal-body">
+                    <button class="back-btn" onclick="backToLogin()">← Back to login</button>
+                    <form onsubmit="handleSendOTP(event)">
+                        <div class="form-group">
+                            <label for="forgotEmail">Email Address</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="forgotEmail" placeholder="your.email@example.com" required autocomplete="email">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-full">Send OTP</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- OTP Verification Form -->
+            <div id="otpForm" style="display: none;">
+                <div class="modal-header">
+                    <div class="modal-logo">
+                        <svg viewBox="-8 -8 16 16" width="40" height="40" fill="none" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                            <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                            <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                            <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                            <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                            <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                            <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                            <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                            <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                        </svg>
+                        <span>Transaction Bridge</span>
+                    </div>
+                    <h2>Verify OTP</h2>
+                    <p>Enter the code sent to <br><strong id="otpEmail"></strong></p>
+                </div>
+                <div class="modal-body">
+                    <button class="back-btn" onclick="backToLogin()">← Back to login</button>
+                    <form onsubmit="handleVerifyOTP(event)">
+                        <div class="form-group">
+                            <label for="otp">Enter OTP</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="otp" class="otp-input" placeholder="000000" maxlength="6" required autocomplete="one-time-code">
+                            </div>
+                            <div class="otp-timer" id="otpTimer">OTP valid for 5:00 minutes</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="newPassword" placeholder="Enter new password" required autocomplete="new-password">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="confirmPassword" placeholder="Confirm new password" required autocomplete="new-password">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-full">Reset Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let otpTimer;
+        let timeLeft = 300; // 5 minutes in seconds
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 10) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        function openLoginModal() {
+            document.getElementById('modalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            setTimeout(() => {
+                backToLogin();
+            }, 200);
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target.id === 'modalOverlay') {
+                closeModal();
+            }
+        }
+
+        function backToLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('otpForm').style.display = 'none';
+            clearInterval(otpTimer);
+            timeLeft = 300;
+            // Clear all inputs
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('forgotEmail').value = '';
+            document.getElementById('otp').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+
+        function showForgotPassword(event) {
+            event.preventDefault();
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotPasswordForm').style.display = 'block';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            console.log('Login attempt:', { email, password });
+            
+            // Simulate role detection
+            alert('Login functionality will be implemented with backend.\n\nRole detection will redirect:\n- CAs to CA Dashboard\n- Companies to Customer Dashboard');
+        }
+
+        function handleSendOTP(event) {
+            event.preventDefault();
+            const email = document.getElementById('forgotEmail').value;
+            
+            console.log('Sending OTP to:', email);
+            document.getElementById('otpEmail').textContent = email;
+            
+            // Show OTP form
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('otpForm').style.display = 'block';
+            
+            // Start timer
+            startOTPTimer();
+            
+            alert('✓ OTP has been sent to your email\n\n(Demo: Use any 6-digit code for testing)');
+        }
+
+        function startOTPTimer() {
+            clearInterval(otpTimer);
+            timeLeft = 300;
+            
+            otpTimer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                const timerElement = document.getElementById('otpTimer');
+                timerElement.textContent = `OTP valid for ${minutes}:${seconds.toString().padStart(2, '0')} minutes`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(otpTimer);
+                    timerElement.textContent = '⚠ OTP expired. Please request a new one.';
+                    timerElement.style.color = '#ea4335';
+                }
+            }, 1000);
+        }
+
+        function handleVerifyOTP(event) {
+            event.preventDefault();
+            const otp = document.getElementById('otp').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (otp.length !== 6) {
+                alert('⚠ Please enter a valid 6-digit OTP');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('⚠ Password must be at least 6 characters long');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('⚠ Passwords do not match');
+                return;
+            }
+            
+            if (timeLeft <= 0) {
+                alert('⚠ OTP has expired. Please request a new one.');
+                return;
+            }
+            
+            console.log('Password reset successful');
+            alert('✓ Password has been reset successfully!\n\nYou can now login with your new password.');
+            
+            closeModal();
+        }
+
+        // Only allow numbers in OTP input
+        document.addEventListener('DOMContentLoaded', function() {
+            const otpInput = document.getElementById('otp');
+            if (otpInput) {
+                otpInput.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

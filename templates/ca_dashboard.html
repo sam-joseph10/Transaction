@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>CA Dashboard · Transaction Bridge</title>
+    <!-- Google Font & design system -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- SheetJS + jsPDF for reports -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            background: #f8f9fa;
+            color: #202124;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* navigation */
+        .navbar {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.1), 0 1px 3px 1px rgba(60,64,67,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 500;
+            color: #202124;
+            text-decoration: none;
+        }
+        .logo-icon svg {
+            width: 36px;
+            height: 36px;
+            display: block;
+        }
+        .badge-ca {
+            background: #1a73e8;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* main container */
+        .dashboard-container {
+            max-width: 1300px;
+            margin: 24px auto 40px;
+            padding: 0 20px;
+            flex: 1;
+            width: 100%;
+        }
+
+        /* header with add customer + global search (optional) */
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .welcome h1 {
+            font-size: clamp(26px, 5vw, 36px);
+            font-weight: 400;
+        }
+        .welcome p {
+            color: #5f6368;
+            font-size: 16px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .btn-add-customer {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-add-customer:hover {
+            background: #1765cc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15);
+        }
+
+        /* 4 cards grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0 40px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 20px;
+            border: 1px solid #dadce0;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.1);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #1a73e8;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .card-icon {
+            width: 48px; height: 48px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .bg-pending { background: #fef7e0; color: #f9ab00; }
+        .bg-view { background: #e8f0fe; color: #1a73e8; }
+        .bg-report { background: #e6f4ea; color: #0f9d58; }
+        .bg-company { background: #fce8e6; color: #c5221f; }
+        .card-value {
+            font-size: 36px;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+        .card-label {
+            color: #5f6368;
+            font-size: 15px;
+        }
+
+        /* section headers with back button and integrated search */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 20px 0 20px;
+            flex-wrap: wrap;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #5f6368;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #f1f3f4;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 400;
+            margin-right: auto;
+        }
+        .section-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .section-search .search-icon {
+            position: absolute;
+            left: 16px;
+            color: #5f6368;
+            font-size: 18px;
+        }
+        .section-search input {
+            padding: 10px 20px 10px 48px;
+            border: 1px solid #dadce0;
+            border-radius: 40px;
+            font-size: 14px;
+            width: 240px;
+            background: white;
+            transition: all 0.2s;
+        }
+        .section-search input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 4px rgba(26,115,232,0.1);
+            width: 280px;
+        }
+
+        /* modal overlay (add customer) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-customer {
+            background: white;
+            border-radius: 32px;
+            width: 90%;
+            max-width: 500px;
+            padding: 32px;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-customer h2 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 24px;
+        }
+        .modal-customer .form-group {
+            margin-bottom: 20px;
+        }
+        .modal-customer label {
+            font-weight: 500;
+            font-size: 14px;
+            color: #3c4043;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .modal-customer input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 16px;
+            font-size: 15px;
+        }
+        .modal-customer input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 4px rgba(26,115,232,0.1);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+            margin-top: 28px;
+        }
+        .btn-secondary {
+            background: white;
+            border: 1px solid #dadce0;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* table styling */
+        .table-container {
+            border-radius: 24px;
+            border: 1px solid #e8eaed;
+            overflow-x: auto;
+            background: white;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+        th {
+            text-align: left;
+            padding: 16px 20px;
+            background: #f8f9fa;
+            font-weight: 500;
+            color: #3c4043;
+            border-bottom: 1px solid #dadce0;
+        }
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #e8eaed;
+        }
+        .status-badge.pending {
+            background: #fef7e0;
+            color: #f9ab00;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .action-link {
+            color: #1a73e8;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* report preview */
+        .report-preview {
+            background: #f8f9fa;
+            border-radius: 24px;
+            padding: 24px;
+            margin-top: 10px;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 150px;
+        }
+
+        @media (max-width: 900px) {
+            .cards-grid { grid-template-columns: repeat(2,1fr); }
+        }
+        @media (max-width: 600px) {
+            .cards-grid { grid-template-columns: 1fr; }
+            .header-row { flex-direction: column; align-items: start; }
+            .section-search input { width: 180px; }
+            .section-search input:focus { width: 220px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="logo" onclick="returnToDashboard()" style="cursor:pointer;">
+            <div class="logo-icon">
+                <svg viewBox="-8 -8 16 16" width="36" height="36" fill="none" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                    <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                    <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                    <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                    <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                    <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                    <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                    <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                    <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                </svg>
+            </div>
+            <span>Transaction Bridge</span>
+        </a>
+        <div class="badge-ca">👤 CA · David Miller</div>
+    </nav>
+
+    <main class="dashboard-container">
+        <!-- header with add customer (global search removed, now per card) -->
+        <div class="header-row">
+            <div class="welcome">
+                <h1>CA Dashboard</h1>
+                <p>Manage companies, approvals, and reports</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-add-customer" onclick="openAddCustomerModal()">➕ Add customer</button>
+            </div>
+        </div>
+
+        <!-- 4 cards (click to show section and scroll) -->
+        <div class="cards-grid">
+            <div class="stat-card" onclick="viewPendingTransactions()">
+                <div class="card-header">
+                    <div class="card-icon bg-pending">⏳</div>
+                    <div>
+                        <div class="card-value" id="pendingCount">12</div>
+                        <div class="card-label">Pending approvals</div>
+                    </div>
+                </div>
+                <p style="color:#5f6368; font-size:14px;">click to view pending</p>
+            </div>
+            <div class="stat-card" onclick="viewAllTransactions()">
+                <div class="card-header">
+                    <div class="card-icon bg-view">📋</div>
+                    <div>
+                        <div class="card-value" id="totalTransactions">42</div>
+                        <div class="card-label">Transactions</div>
+                    </div>
+                </div>
+                <p style="color:#5f6368; font-size:14px;">view full history</p>
+            </div>
+            <div class="stat-card" onclick="showTransactionReport()">
+                <div class="card-header">
+                    <div class="card-icon bg-report">📊</div>
+                    <div>
+                        <div class="card-value">Report</div>
+                        <div class="card-label">Transaction report</div>
+                    </div>
+                </div>
+                <p style="color:#5f6368; font-size:14px;">export PDF/Excel</p>
+            </div>
+            <div class="stat-card" onclick="showCompanyReport()">
+                <div class="card-header">
+                    <div class="card-icon bg-company">🏢</div>
+                    <div>
+                        <div class="card-value">Companies</div>
+                        <div class="card-label">Company summary</div>
+                    </div>
+                </div>
+                <p style="color:#5f6368; font-size:14px;">client details report</p>
+            </div>
+        </div>
+
+        <!-- ===== PENDING SECTION (with its own search) ===== -->
+        <div id="pendingSection" style="display: none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideAllSections()">←</button>
+                <div class="section-title">⏳ Pending approvals</div>
+                <div class="section-search">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="pendingSearch" placeholder="Search pending..." onkeyup="filterPending()">
+                </div>
+            </div>
+            <div class="table-container" id="pendingTableContainer"></div>
+        </div>
+
+        <!-- ===== ALL TRANSACTIONS SECTION (with its own search) ===== -->
+        <div id="allTransactionsSection" style="display: none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideAllSections()">←</button>
+                <div class="section-title">📋 All transactions</div>
+                <div class="section-search">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="allSearch" placeholder="Search all transactions..." onkeyup="filterAll()">
+                </div>
+            </div>
+            <div class="table-container" id="allTransactionsTable"></div>
+        </div>
+
+        <!-- ===== TRANSACTION REPORT SECTION (with search inside preview) ===== -->
+        <div id="transactionReportSection" style="display: none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideAllSections()">←</button>
+                <div class="section-title">📊 Transaction report</div>
+                <div class="section-search">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="reportSearch" placeholder="Filter report..." onkeyup="filterReport()">
+                </div>
+            </div>
+            <div class="report-preview">
+                <label style="font-weight:500;">Select fields:</label>
+                <div class="checkbox-group" id="txnFields">
+                    <label class="checkbox-item"><input type="checkbox" value="Company Name" checked> Company Name</label>
+                    <label class="checkbox-item"><input type="checkbox" value="GSTIN Number" checked> GSTIN</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Bank Account Number" checked> Bank A/c</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Transaction Date" checked> Date</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Transaction Type" checked> Type</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Party Name" checked> Party</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Category" checked> Category</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Amount" checked> Amount</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Narration" checked> Narration</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Status" checked> Status</label>
+                </div>
+                <div style="display:flex; gap:16px; margin:20px 0; flex-wrap:wrap;">
+                    <button class="btn-primary" onclick="exportTxnPDF()">📄 PDF</button>
+                    <button class="btn-primary" onclick="exportTxnExcel()">📊 Excel</button>
+                </div>
+                <div id="txnPreview" class="table-container"></div>
+            </div>
+        </div>
+
+        <!-- ===== COMPANY REPORT SECTION (with its own search) ===== -->
+        <div id="companyReportSection" style="display: none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideAllSections()">←</button>
+                <div class="section-title">🏢 Company summary</div>
+                <div class="section-search">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="companySearch" placeholder="Search companies..." onkeyup="filterCompany()">
+                </div>
+            </div>
+            <div class="report-preview">
+                <label style="font-weight:500;">Select fields:</label>
+                <div class="checkbox-group" id="companyFields">
+                    <label class="checkbox-item"><input type="checkbox" value="Company Name" checked> Company Name</label>
+                    <label class="checkbox-item"><input type="checkbox" value="GSTIN" checked> GSTIN</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Bank Account" checked> Bank A/c</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Contact Email" checked> Email</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Phone" checked> Phone</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Total Transactions" checked> # Transactions</label>
+                </div>
+                <div style="display:flex; gap:16px; margin:20px 0; flex-wrap:wrap;">
+                    <button class="btn-primary" onclick="exportCompanyPDF()">📄 PDF</button>
+                    <button class="btn-primary" onclick="exportCompanyExcel()">📊 Excel</button>
+                </div>
+                <div id="companyPreview" class="table-container"></div>
+            </div>
+        </div>
+
+        <!-- Add Customer Modal -->
+        <div class="modal-overlay" id="customerModal" onclick="if(event.target===this) closeCustomerModal()">
+            <div class="modal-customer">
+                <h2>Add new customer company</h2>
+                <div class="form-group"><label>Company Name</label><input type="text" id="compName" placeholder="e.g. Acme Corp"></div>
+                <div class="form-group"><label>GSTIN Number</label><input type="text" id="gstin" placeholder="22AAAAA0000A1Z5"></div>
+                <div class="form-group"><label>Bank Account Number</label><input type="text" id="bankAcc" placeholder="1234567890"></div>
+                <div class="form-group"><label>Contact Email</label><input type="email" id="compEmail" placeholder="finance@acme.com"></div>
+                <div class="form-group"><label>Contact Phone</label><input type="tel" id="compPhone" placeholder="9876543210"></div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeCustomerModal()">Cancel</button>
+                    <button class="btn-primary" onclick="addCustomer()">Add company</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ---------- DEMO DATA ----------
+        let companies = [
+            { name: 'Acme Corp', gstin: '27AAPFU1234M1Z', bank: '1234567890', email: 'accounts@acme.com', phone: '9876543210' },
+            { name: 'Beta Solutions', gstin: '29ABCDE1234F2Z', bank: '2345678901', email: 'finance@beta.com', phone: '8765432109' },
+            { name: 'Gamma Industries', gstin: '33GHIJK5678L3Z', bank: '3456789012', email: 'gamma@ind.com', phone: '7654321098' },
+        ];
+
+        let transactions = [
+            { date: '2026-03-01', company: 'Acme Corp', type: 'Receipt', party: 'Alpha Ltd', category: 'Revenue', amount: 42500, status: 'Pending', narration: 'Invoice 101' },
+            { date: '2026-03-02', company: 'Beta Solutions', type: 'Payment', party: 'Beta Suppliers', category: 'Office Expense', amount: 3800, status: 'Approved', narration: '' },
+            { date: '2026-03-02', company: 'Acme Corp', type: 'Receipt', party: 'Gamma Consulting', category: 'Professional Fees', amount: 15000, status: 'Pending', narration: 'Advance' },
+            { date: '2026-03-03', company: 'Gamma Industries', type: 'Payment', party: 'Delta Travels', category: 'Travel', amount: 9200, status: 'Rejected', narration: 'Hotel' },
+            { date: '2026-03-03', company: 'Acme Corp', type: 'Receipt', party: 'Epsilon Corp', category: 'Revenue', amount: 7800, status: 'Approved', narration: '' },
+            { date: '2026-03-04', company: 'Beta Solutions', type: 'Payment', party: 'Zeta Utilities', category: 'Utilities', amount: 2150, status: 'Pending', narration: 'Electricity' },
+            { date: '2026-03-05', company: 'Gamma Industries', type: 'Receipt', party: 'Eta LLC', category: 'Revenue', amount: 33200, status: 'Pending', narration: 'Q1' },
+            { date: '2026-03-06', company: 'Acme Corp', type: 'Payment', party: 'Kappa Rentals', category: 'Rent', amount: 22000, status: 'Approved', narration: '' },
+            { date: '2026-03-07', company: 'Beta Solutions', type: 'Receipt', party: 'Lambda Ltd', category: 'Revenue', amount: 12750, status: 'Pending', narration: 'Sale' },
+            { date: '2026-03-08', company: 'Acme Corp', type: 'Payment', party: 'Mu Logistics', category: 'Travel', amount: 5600, status: 'Rejected', narration: 'Courier' },
+            { date: '2026-03-09', company: 'Gamma Industries', type: 'Receipt', party: 'Omicron Partners', category: 'Professional Fees', amount: 14500, status: 'Approved', narration: '' },
+            { date: '2026-03-10', company: 'Acme Corp', type: 'Payment', party: 'Pi Services', category: 'Utilities', amount: 1850, status: 'Pending', narration: '' },
+            { date: '2026-03-11', company: 'Beta Solutions', type: 'Receipt', party: 'Sigma Inc', category: 'Revenue', amount: 27800, status: 'Pending', narration: 'Advance' },
+        ];
+
+        // Helper: update counts
+        function updateCounts() {
+            document.getElementById('pendingCount').innerText = transactions.filter(t => t.status === 'Pending').length;
+            document.getElementById('totalTransactions').innerText = transactions.length;
+        }
+
+        // ---------- CARD CLICK: show section + scroll to it ----------
+        function showSectionAndScroll(sectionId) {
+            hideAllSections();
+            let section = document.getElementById(sectionId);
+            section.style.display = 'block';
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        }
+
+        window.viewPendingTransactions = function() {
+            showSectionAndScroll('pendingSection');
+            filterPending(); // render with current search term
+        };
+        window.viewAllTransactions = function() {
+            showSectionAndScroll('allTransactionsSection');
+            filterAll();
+        };
+        window.showTransactionReport = function() {
+            showSectionAndScroll('transactionReportSection');
+            filterReport();
+        };
+        window.showCompanyReport = function() {
+            showSectionAndScroll('companyReportSection');
+            filterCompany();
+        };
+
+        window.hideAllSections = function() {
+            document.getElementById('pendingSection').style.display = 'none';
+            document.getElementById('allTransactionsSection').style.display = 'none';
+            document.getElementById('transactionReportSection').style.display = 'none';
+            document.getElementById('companyReportSection').style.display = 'none';
+        };
+        window.returnToDashboard = hideAllSections;
+
+        // ---------- SEARCH FUNCTIONS PER CARD ----------
+        window.filterPending = function() {
+            let term = document.getElementById('pendingSearch').value.toLowerCase();
+            let pending = transactions.filter(t => t.status === 'Pending' && 
+                (t.company.toLowerCase().includes(term) || t.party.toLowerCase().includes(term) || t.status.toLowerCase().includes(term)));
+            let html = '<table><thead><tr><th>Date</th><th>Company</th><th>Type</th><th>Party</th><th>Category</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+            pending.forEach((t, idx) => {
+                let originalIdx = transactions.findIndex(tr => tr.date === t.date && tr.company === t.company && tr.party === t.party);
+                html += `<tr>
+                    <td>${t.date}</td><td>${t.company}</td><td>${t.type}</td><td>${t.party}</td><td>${t.category}</td>
+                    <td>₹ ${t.amount}</td><td><span class="status-badge pending">Pending</span></td>
+                    <td><span class="action-link" onclick="approveTransaction(${originalIdx})">✓ Approve</span> | <span class="action-link" onclick="rejectTransaction(${originalIdx})">✗ Reject</span></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('pendingTableContainer').innerHTML = html;
+        };
+
+        window.filterAll = function() {
+            let term = document.getElementById('allSearch').value.toLowerCase();
+            let filtered = transactions.filter(t => 
+                t.company.toLowerCase().includes(term) || t.party.toLowerCase().includes(term) || t.status.toLowerCase().includes(term));
+            let html = '<table><thead><tr><th>Date</th><th>Company</th><th>Type</th><th>Party</th><th>Amount</th><th>Status</th></tr></thead><tbody>';
+            filtered.forEach(t => {
+                html += `<tr><td>${t.date}</td><td>${t.company}</td><td>${t.type}</td><td>${t.party}</td><td>₹ ${t.amount}</td><td>${t.status}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('allTransactionsTable').innerHTML = html;
+        };
+
+        window.filterReport = function() {
+            let term = document.getElementById('reportSearch').value.toLowerCase();
+            renderTxnPreview(term);
+        };
+
+        window.filterCompany = function() {
+            let term = document.getElementById('companySearch').value.toLowerCase();
+            renderCompanyPreview(term);
+        };
+
+        // Approve / reject
+        window.approveTransaction = function(idx) {
+            transactions[idx].status = 'Approved';
+            updateCounts();
+            filterPending();
+            filterAll();
+            alert('Transaction approved');
+        };
+        window.rejectTransaction = function(idx) {
+            transactions[idx].status = 'Rejected';
+            updateCounts();
+            filterPending();
+            filterAll();
+            alert('Transaction rejected');
+        };
+
+        // Render previews with optional term
+        function renderTxnPreview(term = '') {
+            let preview = document.getElementById('txnPreview');
+            if (!preview) return;
+            let selected = Array.from(document.querySelectorAll('#txnFields input:checked')).map(cb => cb.value);
+            let filtered = transactions.filter(t => 
+                t.company.toLowerCase().includes(term) || t.party.toLowerCase().includes(term) || t.status.toLowerCase().includes(term));
+            let html = '<table><thead><tr>';
+            if (selected.includes('Company Name')) html += '<th>Company</th>';
+            if (selected.includes('GSTIN Number')) html += '<th>GSTIN</th>';
+            if (selected.includes('Bank Account Number')) html += '<th>Bank A/c</th>';
+            if (selected.includes('Transaction Date')) html += '<th>Date</th>';
+            if (selected.includes('Transaction Type')) html += '<th>Type</th>';
+            if (selected.includes('Party Name')) html += '<th>Party</th>';
+            if (selected.includes('Category')) html += '<th>Category</th>';
+            if (selected.includes('Amount')) html += '<th>Amount</th>';
+            if (selected.includes('Narration')) html += '<th>Narration</th>';
+            if (selected.includes('Status')) html += '<th>Status</th>';
+            html += '</tr></thead><tbody>';
+            filtered.slice(0,10).forEach(t => {
+                let company = companies.find(c => c.name === t.company) || companies[0];
+                html += '<tr>';
+                if (selected.includes('Company Name')) html += `<td>${t.company}</td>`;
+                if (selected.includes('GSTIN Number')) html += `<td>${company.gstin}</td>`;
+                if (selected.includes('Bank Account Number')) html += `<td>${company.bank}</td>`;
+                if (selected.includes('Transaction Date')) html += `<td>${t.date}</td>`;
+                if (selected.includes('Transaction Type')) html += `<td>${t.type}</td>`;
+                if (selected.includes('Party Name')) html += `<td>${t.party}</td>`;
+                if (selected.includes('Category')) html += `<td>${t.category}</td>`;
+                if (selected.includes('Amount')) html += `<td>₹ ${t.amount}</td>`;
+                if (selected.includes('Narration')) html += `<td>${t.narration || '—'}</td>`;
+                if (selected.includes('Status')) html += `<td>${t.status}</td>`;
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+        }
+
+        function renderCompanyPreview(term = '') {
+            let preview = document.getElementById('companyPreview');
+            if (!preview) return;
+            let selected = Array.from(document.querySelectorAll('#companyFields input:checked')).map(cb => cb.value);
+            let filtered = companies.filter(c => c.name.toLowerCase().includes(term));
+            let html = '<table><thead><tr>';
+            if (selected.includes('Company Name')) html += '<th>Company</th>';
+            if (selected.includes('GSTIN')) html += '<th>GSTIN</th>';
+            if (selected.includes('Bank Account')) html += '<th>Bank A/c</th>';
+            if (selected.includes('Contact Email')) html += '<th>Email</th>';
+            if (selected.includes('Phone')) html += '<th>Phone</th>';
+            if (selected.includes('Total Transactions')) html += '<th># Txns</th>';
+            html += '</tr></thead><tbody>';
+            filtered.forEach(c => {
+                let txnCount = transactions.filter(t => t.company === c.name).length;
+                html += '<tr>';
+                if (selected.includes('Company Name')) html += `<td>${c.name}</td>`;
+                if (selected.includes('GSTIN')) html += `<td>${c.gstin}</td>`;
+                if (selected.includes('Bank Account')) html += `<td>${c.bank}</td>`;
+                if (selected.includes('Contact Email')) html += `<td>${c.email}</td>`;
+                if (selected.includes('Phone')) html += `<td>${c.phone}</td>`;
+                if (selected.includes('Total Transactions')) html += `<td>${txnCount}</td>`;
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+        }
+
+        // ----- add customer modal -----
+        window.openAddCustomerModal = function() {
+            document.getElementById('customerModal').classList.add('active');
+        };
+        window.closeCustomerModal = function() {
+            document.getElementById('customerModal').classList.remove('active');
+        };
+        window.addCustomer = function() {
+            let name = document.getElementById('compName').value.trim();
+            let gstin = document.getElementById('gstin').value.trim();
+            let bank = document.getElementById('bankAcc').value.trim();
+            let email = document.getElementById('compEmail').value.trim();
+            let phone = document.getElementById('compPhone').value.trim();
+            if (!name) { alert('Company name required'); return; }
+            companies.push({ name, gstin, bank, email, phone });
+            alert(`✅ Company "${name}" added. Login credentials would be sent (demo).`);
+            closeCustomerModal();
+            document.getElementById('compName').value = ''; document.getElementById('gstin').value = ''; document.getElementById('bankAcc').value = ''; document.getElementById('compEmail').value = ''; document.getElementById('compPhone').value = '';
+            filterCompany(); // refresh company report if visible
+        };
+
+        // export placeholders
+        window.exportTxnPDF = function() { alert('📄 Transaction PDF (demo)'); };
+        window.exportTxnExcel = function() { alert('📊 Transaction Excel (demo)'); };
+        window.exportCompanyPDF = function() { alert('📄 Company PDF (demo)'); };
+        window.exportCompanyExcel = function() { alert('📊 Company Excel (demo)'); };
+
+        // initial load
+        window.onload = function() {
+            updateCounts();
+            filterPending();
+            filterAll();
+            renderTxnPreview();
+            renderCompanyPreview();
+            document.getElementById('txnFields')?.addEventListener('change', () => filterReport());
+            document.getElementById('companyFields')?.addEventListener('change', () => filterCompany());
+        };
+    </script>
+</body>
+</html>

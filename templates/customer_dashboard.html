@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Customer Dashboard · Transaction Bridge</title>
+    <!-- Google Font & design system (same as landing) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- SheetJS (XLSX) for real Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF + autoTable for real PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            background: #f8f9fa;
+            color: #202124;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* navigation */
+        .navbar {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.1), 0 1px 3px 1px rgba(60,64,67,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 500;
+            color: #202124;
+            text-decoration: none;
+        }
+        /* custom logo SVG from file (line art) */
+        .logo-icon svg {
+            width: 36px;
+            height: 36px;
+            display: block;
+        }
+        .company-badge {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            flex-wrap: wrap;
+        }
+        .dot-green {
+            width: 10px; height: 10px; background: #34a853; border-radius: 50%;
+        }
+
+        /* main container */
+        .dashboard-container {
+            max-width: 1300px;
+            margin: 20px auto 40px;
+            padding: 0 16px;
+            flex: 1;
+            width: 100%;
+        }
+
+        /* welcome */
+        .welcome-section {
+            margin-bottom: 24px;
+        }
+        .welcome-section h1 {
+            font-size: clamp(24px, 6vw, 36px);
+            font-weight: 400;
+        }
+        .company-meta {
+            color: #5f6368;
+            font-size: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            margin-top: 4px;
+        }
+
+        /* 4 cards grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin: 32px 0 40px;
+        }
+        .feature-card {
+            background: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.1);
+        }
+        .feature-card:hover {
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            transform: translateY(-4px);
+            border-color: transparent;
+        }
+        .card-image {
+            width: 100%;
+            height: 140px;
+            overflow: hidden;
+            background: #f1f3f4;
+        }
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .feature-card:hover .card-image img {
+            transform: scale(1.05);
+        }
+        .card-content {
+            padding: 18px 16px 20px;
+        }
+        .card-icon {
+            width: 44px; height: 44px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 12px;
+        }
+        .bg-blue { background: #e8f0fe; color: #1a73e8; }
+        .bg-red { background: #fce8e6; color: #c5221f; }
+        .bg-green { background: #e6f4ea; color: #0f9d58; }
+        .bg-yellow { background: #fef7e0; color: #f9ab00; }
+        .card-content h3 {
+            font-size: 20px; font-weight: 500; margin-bottom: 4px;
+        }
+        .card-content p {
+            color: #5f6368; font-size: 13px;
+        }
+
+        /* page sections */
+        .page-section {
+            display: none;
+            background: white;
+            border-radius: 28px;
+            padding: 24px 20px;
+            border: 1px solid #dadce0;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.1);
+            margin-bottom: 30px;
+        }
+        .page-section.active {
+            display: block;
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .back-home-btn {
+            background: none; border: none; font-size: 28px; cursor: pointer;
+            width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #5f6368; transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .back-home-btn:hover { background: #f1f3f4; }
+        .page-header h2 {
+            font-size: clamp(22px, 5vw, 30px); font-weight: 400;
+        }
+
+        /* forms */
+        .form-grid {
+            display: grid; grid-template-columns: repeat(2,1fr); gap: 20px 24px;
+        }
+        .field-full { grid-column: span 2; }
+        .form-group {
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .form-group label {
+            font-weight: 500; font-size: 14px; color: #3c4043;
+        }
+        .form-control {
+            padding: 12px 14px; border: 1px solid #dadce0; border-radius: 14px;
+            font-size: 15px; font-family: 'Roboto', sans-serif; background: white;
+        }
+        .form-control:focus {
+            border-color: #1a73e8; box-shadow: 0 0 0 4px rgba(26,115,232,0.1); outline: none;
+        }
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%235f6368'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+        }
+        .btn-primary {
+            background: #1a73e8; color: white; border: none; padding: 12px 28px;
+            border-radius: 40px; font-weight: 500; font-size: 15px;
+            cursor: pointer; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3);
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+            white-space: nowrap;
+        }
+        .btn-primary:hover {
+            background: #1765cc; box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: white; color: #1a73e8; border: 1px solid #dadce0; padding: 12px 28px;
+            border-radius: 40px; font-weight: 500; font-size: 15px; cursor: pointer;
+        }
+        .action-bar {
+            display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
+            margin-top: 28px;
+        }
+
+        /* tables */
+        .table-container {
+            border-radius: 20px; border: 1px solid #e8eaed; overflow-x: auto;
+            background: white; margin: 20px 0;
+        }
+        table {
+            width: 100%; border-collapse: collapse; min-width: 700px;
+        }
+        th {
+            text-align: left; padding: 14px 16px; background: #f8f9fa;
+            font-weight: 500; font-size: 13px; color: #3c4043; border-bottom: 1px solid #dadce0;
+        }
+        td {
+            padding: 12px 16px; border-bottom: 1px solid #e8eaed; font-size: 13px;
+        }
+        .status-badge {
+            background: #e6f4ea; color: #0f9d58; padding: 4px 10px; border-radius: 30px;
+            font-size: 12px; font-weight: 500; display: inline-block;
+        }
+        .status-badge.rejected { background: #fce8e6; color: #c5221f; }
+        .status-badge.pending { background: #fef7e0; color: #f9ab00; }
+        .edit-link { color: #1a73e8; font-weight: 500; cursor: pointer; text-decoration: underline; }
+
+        /* report builder */
+        .report-builder {
+            background: #f8f9fa; border-radius: 24px; padding: 20px;
+        }
+        .checkbox-group {
+            display: flex; flex-wrap: wrap; gap: 16px 24px; margin: 16px 0 24px;
+        }
+        .checkbox-item {
+            display: flex; align-items: center; gap: 8px; min-width: 150px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: #1a73e8;
+        }
+        .footer-placeholder {
+            margin-top: 40px; color: #5f6368; font-size: 13px; text-align: center;
+            border-top: 1px solid #e8eaed; padding-top: 24px;
+        }
+
+        /* smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* mobile overrides */
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .field-full { grid-column: span 1; }
+            .company-badge { font-size: 13px; padding: 5px 12px; }
+            .cards-grid { gap: 16px; }
+            .page-section { padding: 18px; }
+            .action-bar { justify-content: center; }
+            .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .navbar { flex-direction: column; align-items: stretch; }
+            .company-badge { justify-content: center; }
+            .card-image { height: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="logo" onclick="returnToDashboard()" style="cursor:pointer;">
+            <!-- custom logo from file (converted to SVG path) -->
+            <div class="logo-icon">
+                <svg viewBox="-8 -8 16 16" width="36" height="36" fill="none" stroke="#1a73e8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- line data from logo.jpg: each line rendered as path -->
+                    <path d="M -7.01 -6.09 L -4.94 -2.67 L -3.87 -0.88" stroke="#1a73e8"/>
+                    <path d="M -7.01 -6.09 L -3.01 -5.9 L 0.98 -5.71 L 1.02 -5.71" stroke="#ea4335"/>
+                    <path d="M -7.01 -6.09 L -3.99 -3.46 L -0.97 -0.83 L 2.05 1.8 L 5.07 4.43 L 5.13 4.47" stroke="#fbbc04"/>
+                    <path d="M -3.87 -0.88 L -0.96 -3.63 L 1.02 -5.71" stroke="#34a853"/>
+                    <path d="M -3.87 -0.88 L -0.86 1.75 L 2.15 4.38 L 5.13 4.47" stroke="#4285f4"/>
+                    <path d="M -3.87 -0.88 L -0.85 -3.49 L 2.17 -6.11 L 5.13 4.47" stroke="#ea4335"/>
+                    <path d="M -0.96 -3.63 L 1.02 -5.71" stroke="#fbbc04"/>
+                    <path d="M 1.02 -5.71 L 1.12 -1.71 L 1.22 2.29 L 1.22 2.39" stroke="#34a853" stroke-dasharray="0.5,0.3"/>
+                    <path d="M 5.13 4.47 L 5.13 4.53" stroke="#4285f4"/>
+                </svg>
+            </div>
+            <span>Transaction Bridge</span>
+        </a>
+        <div class="company-badge"><span class="dot-green"></span> Bharat Industries · GST 27AAPFU1234M1Z</div>
+    </nav>
+
+    <main class="dashboard-container">
+        <!-- HOME (cards) -->
+        <div id="dashboardHome">
+            <div class="welcome-section">
+                <h1>Customer Dashboard</h1>
+                <div class="company-meta"><span>📋 20+ transactions</span> <span>👤 Bharat Industries</span></div>
+            </div>
+            <div class="cards-grid">
+                <!-- ADD CARD: scrolls to add page form -->
+                <div class="feature-card" onclick="showAndScrollTo('addPage', 'addForm')">
+                    <div class="card-image"><img src="https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=400&auto=format" alt="Add"></div>
+                    <div class="card-content"><div class="card-icon bg-blue">➕</div><h3>Add transaction</h3><p>Record new receipt/payment</p></div>
+                </div>
+                <!-- EDIT REJECTED CARD: scrolls to edit rejected table (main action area) -->
+                <div class="feature-card" onclick="showAndScrollTo('editPage', 'rejectedTableContainer')">
+                    <div class="card-image"><img src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400&auto=format" alt="Edit"></div>
+                    <div class="card-content"><div class="card-icon bg-red">✏️</div><h3>Edit rejected</h3><p>Modify & resubmit</p></div>
+                </div>
+                <!-- VIEW ALL CARD: scrolls to view table -->
+                <div class="feature-card" onclick="showAndScrollTo('viewPage', 'viewFullTable')">
+                    <div class="card-image"><img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&auto=format" alt="View"></div>
+                    <div class="card-content"><div class="card-icon bg-green">👁️</div><h3>View all</h3><p>Complete history</p></div>
+                </div>
+                <!-- REPORT CARD: scrolls to report builder -->
+                <div class="feature-card" onclick="showAndScrollTo('reportPage', 'reportBuilder')">
+                    <div class="card-image"><img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&auto=format" alt="Report"></div>
+                    <div class="card-content"><div class="card-icon bg-yellow">📊</div><h3>Generate report</h3><p>PDF/Excel with fields</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD PAGE (with id on form for scroll) -->
+        <div id="addPage" class="page-section">
+            <div class="page-header"><button class="back-home-btn" onclick="returnToDashboard()">←</button><h2>Add transaction</h2></div>
+            <form id="addForm" onsubmit="addTransaction(event)">
+                <div class="form-grid">
+                    <div class="form-group"><label>Date *</label><input type="date" id="addDate" class="form-control" value="2026-03-15" required></div>
+                    <div class="form-group"><label>Amount (₹) *</label><input type="number" step="0.01" id="addAmount" class="form-control" placeholder="1500" required></div>
+                    <div class="form-group"><label>Type *</label><select id="addType" class="form-control"><option>Receipt</option><option>Payment</option></select></div>
+                    <div class="form-group"><label>Party *</label><input type="text" id="addParty" class="form-control" placeholder="Party name" required></div>
+                    <div class="form-group"><label>Category</label><select id="addCategory" class="form-control"><option>Office Expense</option><option>Professional Fees</option><option>Travel</option><option>Revenue</option><option>Other</option></select></div>
+                    <div class="form-group"><label>Narration</label><input type="text" id="addNarration" class="form-control" placeholder="Optional"></div>
+                    <div class="form-group field-full"><label>Attachment (file)</label><input type="file" id="addFile" class="form-control"></div>
+                </div>
+                <div class="action-bar"><button type="button" class="btn-secondary" onclick="returnToDashboard()">Cancel</button><button type="submit" class="btn-primary">➕ Add</button></div>
+            </form>
+            <div style="margin-top:32px;"><h3 style="font-weight:400; margin-bottom:16px;">Recent entries</h3><div class="table-container" id="recentAddTable"></div></div>
+        </div>
+
+        <!-- EDIT REJECTED PAGE (container id for scroll) -->
+        <div id="editPage" class="page-section">
+            <div class="page-header"><button class="back-home-btn" onclick="returnToDashboard()">←</button><h2>Edit rejected</h2></div>
+            <div class="table-container" id="rejectedTableContainer"></div>
+            <div id="editFormContainer" style="margin-top:32px; background:#f8f9fa; border-radius:24px; padding:24px; display:none;">
+                <h3 style="margin-bottom:16px;">✏️ Edit transaction</h3>
+                <form id="editRejectedForm" onsubmit="updateRejectedTransaction(event)">
+                    <input type="hidden" id="editIndex" value="">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Date</label><input type="date" id="editDate" class="form-control" required></div>
+                        <div class="form-group"><label>Amount (₹)</label><input type="number" step="0.01" id="editAmount" class="form-control" required></div>
+                        <div class="form-group"><label>Type</label><select id="editType" class="form-control"><option>Receipt</option><option>Payment</option></select></div>
+                        <div class="form-group"><label>Party</label><input type="text" id="editParty" class="form-control" required></div>
+                        <div class="form-group"><label>Category</label><select id="editCategory" class="form-control"><option>Office Expense</option><option>Professional Fees</option><option>Travel</option><option>Revenue</option></select></div>
+                        <div class="form-group"><label>Narration</label><input type="text" id="editNarration" class="form-control"></div>
+                    </div>
+                    <div class="action-bar"><button type="button" class="btn-secondary" onclick="document.getElementById('editFormContainer').style.display='none'">Cancel</button><button type="submit" class="btn-primary">✅ Update</button></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW ALL PAGE -->
+        <div id="viewPage" class="page-section">
+            <div class="page-header"><button class="back-home-btn" onclick="returnToDashboard()">←</button><h2>All transactions</h2></div>
+            <div class="table-container" id="viewFullTable"></div>
+        </div>
+
+        <!-- REPORT PAGE (report builder id for scroll) -->
+        <div id="reportPage" class="page-section">
+            <div class="page-header"><button class="back-home-btn" onclick="returnToDashboard()">←</button><h2>Generate report</h2></div>
+            <div class="report-builder" id="reportBuilder">
+                <label style="font-weight:500;">📌 Select fields:</label>
+                <div class="checkbox-group" id="fieldChecklist">
+                    <label class="checkbox-item"><input type="checkbox" value="Company Name" checked> Company Name</label>
+                    <label class="checkbox-item"><input type="checkbox" value="GSTIN Number" checked> GSTIN</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Bank Account Number" checked> Bank A/c</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Transaction Date" checked> Date</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Transaction Type" checked> Type</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Party Name" checked> Party</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Category" checked> Category</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Amount" checked> Amount</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Narration" checked> Narration</label>
+                    <label class="checkbox-item"><input type="checkbox" value="Status" checked> Status</label>
+                </div>
+                <div style="display:flex; gap:16px; flex-wrap:wrap; margin:24px 0 10px;">
+                    <button class="btn-primary" onclick="generatePDF()">📄 Export PDF</button>
+                    <button class="btn-primary" onclick="generateExcel()">📊 Export Excel</button>
+                </div>
+            </div>
+            <div id="reportPreview" class="table-container" style="margin-top:24px;"></div>
+        </div>
+    </main>
+
+    <footer class="footer-placeholder">© 2026 Transaction Bridge — custom logo integrated</footer>
+
+    <script>
+        // ---------- 20+ demo transactions ----------
+        let transactions = [
+            { date: '2026-03-01', type: 'Receipt', party: 'Alpha Solutions', category: 'Revenue', amount: 42500, status: 'Approved', narration: 'Monthly retainer' },
+            { date: '2026-03-02', type: 'Payment', party: 'Beta Suppliers', category: 'Office Expense', amount: 3800, status: 'Approved', narration: 'Stationery' },
+            { date: '2026-03-02', type: 'Receipt', party: 'Gamma Consulting', category: 'Professional Fees', amount: 15000, status: 'Pending', narration: 'Advance' },
+            { date: '2026-03-03', type: 'Payment', party: 'Delta Travels', category: 'Travel', amount: 9200, status: 'Rejected', narration: 'Hotel bill' },
+            { date: '2026-03-03', type: 'Receipt', party: 'Epsilon Corp', category: 'Revenue', amount: 7800, status: 'Approved', narration: 'Part payment' },
+            { date: '2026-03-04', type: 'Payment', party: 'Zeta Utilities', category: 'Utilities', amount: 2150, status: 'Approved', narration: 'Electricity' },
+            { date: '2026-03-05', type: 'Receipt', party: 'Eta LLC', category: 'Revenue', amount: 33200, status: 'Approved', narration: 'Q1 settlement' },
+            { date: '2026-03-05', type: 'Payment', party: 'Theta Marketing', category: 'Office Expense', amount: 4750, status: 'Rejected', narration: 'Ads' },
+            { date: '2026-03-06', type: 'Receipt', party: 'Iota Innovations', category: 'Professional Fees', amount: 6000, status: 'Pending', narration: 'Workshop' },
+            { date: '2026-03-06', type: 'Payment', party: 'Kappa Rentals', category: 'Rent', amount: 22000, status: 'Approved', narration: 'March rent' },
+            { date: '2026-03-07', type: 'Receipt', party: 'Lambda Ltd', category: 'Revenue', amount: 12750, status: 'Approved', narration: 'Product sale' },
+            { date: '2026-03-07', type: 'Payment', party: 'Mu Logistics', category: 'Travel', amount: 5600, status: 'Rejected', narration: 'Courier' },
+            { date: '2026-03-08', type: 'Receipt', party: 'Nu Tech', category: 'Revenue', amount: 8900, status: 'Pending', narration: 'Support' },
+            { date: '2026-03-08', type: 'Payment', party: 'Xi Supplies', category: 'Office Expense', amount: 3300, status: 'Approved', narration: 'Printer' },
+            { date: '2026-03-09', type: 'Receipt', party: 'Omicron Partners', category: 'Professional Fees', amount: 14500, status: 'Approved', narration: '' },
+            { date: '2026-03-09', type: 'Payment', party: 'Pi Services', category: 'Utilities', amount: 1850, status: 'Approved', narration: '' },
+            { date: '2026-03-10', type: 'Receipt', party: 'Theta Group', category: 'Revenue', amount: 6100, status: 'Rejected', narration: 'Incorrect amount' },
+            { date: '2026-03-10', type: 'Payment', party: 'Rho Solutions', category: 'Travel', amount: 4350, status: 'Pending', narration: '' },
+            { date: '2026-03-11', type: 'Receipt', party: 'Sigma Inc', category: 'Revenue', amount: 27800, status: 'Approved', narration: '' },
+            { date: '2026-03-11', type: 'Payment', party: 'Tau Consulting', category: 'Professional Fees', amount: 9900, status: 'Rejected', narration: 'Duplicate entry' },
+            { date: '2026-03-12', type: 'Receipt', party: 'Upsilon Ltd', category: 'Revenue', amount: 4200, status: 'Pending', narration: 'Advance' },
+        ];
+
+        const companyInfo = { companyName: 'Acme Corp', gstin: '27AAPFU1234M1Z', bankAccount: '1234567890' };
+
+        // ---------- render all tables ----------
+        function renderAll() {
+            renderRecentAdd();
+            renderRejectedTable();
+            renderViewFullTable();
+            renderReportPreview();
+        }
+
+        function renderRecentAdd() {
+            let container = document.getElementById('recentAddTable');
+            if (!container) return;
+            let html = '<table><thead><tr><th>Date</th><th>Type</th><th>Party</th><th>Category</th><th>Amount</th><th>Status</th></tr></thead><tbody>';
+            transactions.slice(-5).reverse().forEach(t => { html += `<tr><td>${t.date}</td><td>${t.type}</td><td>${t.party}</td><td>${t.category}</td><td>₹ ${t.amount}</td><td><span class="status-badge ${t.status==='Rejected'?'rejected':t.status==='Pending'?'pending':''}">${t.status}</span></td></tr>`; });
+            html += '</tbody></table>'; container.innerHTML = html;
+        }
+        function renderRejectedTable() {
+            let container = document.getElementById('rejectedTableContainer');
+            if (!container) return;
+            let html = '<table><thead><tr><th>Date</th><th>Party</th><th>Category</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+            transactions.forEach((t,i) => { if(t.status==='Rejected') html += `<tr><td>${t.date}</td><td>${t.party}</td><td>${t.category}</td><td>₹ ${t.amount}</td><td><span class="status-badge rejected">Rejected</span></td><td><span class="edit-link" onclick="openEditRejected(${i})">Edit</span></td></tr>`; });
+            html += '</tbody></table>'; container.innerHTML = html;
+        }
+        function renderViewFullTable() {
+            let container = document.getElementById('viewFullTable');
+            if (!container) return;
+            let html = '<table><thead><tr><th>Date</th><th>Type</th><th>Party</th><th>Category</th><th>Amount</th><th>Status</th><th>Narration</th></tr></thead><tbody>';
+            transactions.forEach(t => { html += `<tr><td>${t.date}</td><td>${t.type}</td><td>${t.party}</td><td>${t.category}</td><td>₹ ${t.amount}</td><td><span class="status-badge ${t.status==='Rejected'?'rejected':t.status==='Pending'?'pending':''}">${t.status}</span></td><td>${t.narration || '—'}</td></tr>`; });
+            html += '</tbody></table>'; container.innerHTML = html;
+        }
+
+        function renderReportPreview() {
+            let preview = document.getElementById('reportPreview');
+            if (!preview) return;
+            let selected = Array.from(document.querySelectorAll('#fieldChecklist input:checked')).map(cb => cb.value);
+            let html = '<table><thead><tr>';
+            if (selected.includes('Company Name')) html += '<th>Company</th>';
+            if (selected.includes('GSTIN Number')) html += '<th>GSTIN</th>';
+            if (selected.includes('Bank Account Number')) html += '<th>Bank A/c</th>';
+            if (selected.includes('Transaction Date')) html += '<th>Date</th>';
+            if (selected.includes('Transaction Type')) html += '<th>Type</th>';
+            if (selected.includes('Party Name')) html += '<th>Party</th>';
+            if (selected.includes('Category')) html += '<th>Category</th>';
+            if (selected.includes('Amount')) html += '<th>Amount</th>';
+            if (selected.includes('Narration')) html += '<th>Narration</th>';
+            if (selected.includes('Status')) html += '<th>Status</th>';
+            html += '</tr></thead><tbody>';
+
+            transactions.slice(0,15).forEach(t => {
+                html += '<tr>';
+                if (selected.includes('Company Name')) html += '<td>Acme Corp</td>';
+                if (selected.includes('GSTIN Number')) html += '<td>27AAPFU1234M1Z</td>';
+                if (selected.includes('Bank Account Number')) html += '<td>1234567890</td>';
+                if (selected.includes('Transaction Date')) html += `<td>${t.date}</td>`;
+                if (selected.includes('Transaction Type')) html += `<td>${t.type}</td>`;
+                if (selected.includes('Party Name')) html += `<td>${t.party}</td>`;
+                if (selected.includes('Category')) html += `<td>${t.category}</td>`;
+                if (selected.includes('Amount')) html += `<td>₹ ${t.amount}</td>`;
+                if (selected.includes('Narration')) html += `<td>${t.narration || '—'}</td>`;
+                if (selected.includes('Status')) html += `<td>${t.status}</td>`;
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+        }
+
+        // ---------- WORKING EXPORTS ----------
+        window.generatePDF = function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let selected = Array.from(document.querySelectorAll('#fieldChecklist input:checked')).map(cb => cb.value);
+            const order = ['Company Name','GSTIN Number','Bank Account Number','Transaction Date','Transaction Type','Party Name','Category','Amount','Narration','Status'];
+            selected = order.filter(f => selected.includes(f));
+
+            let headers = selected.map(f => {
+                if(f==='Company Name') return 'Company';
+                if(f==='GSTIN Number') return 'GSTIN';
+                if(f==='Bank Account Number') return 'Bank A/c';
+                if(f==='Transaction Date') return 'Date';
+                if(f==='Transaction Type') return 'Type';
+                if(f==='Party Name') return 'Party';
+                return f;
+            });
+
+            let dataRows = [];
+            transactions.forEach(t => {
+                let row = [];
+                selected.forEach(f => {
+                    if(f==='Company Name') row.push('Acme Corp');
+                    else if(f==='GSTIN Number') row.push('27AAPFU1234M1Z');
+                    else if(f==='Bank Account Number') row.push('1234567890');
+                    else if(f==='Transaction Date') row.push(t.date);
+                    else if(f==='Transaction Type') row.push(t.type);
+                    else if(f==='Party Name') row.push(t.party);
+                    else if(f==='Category') row.push(t.category);
+                    else if(f==='Amount') row.push('₹ '+t.amount);
+                    else if(f==='Narration') row.push(t.narration||'—');
+                    else if(f==='Status') row.push(t.status);
+                });
+                dataRows.push(row);
+            });
+            doc.autoTable({ head: [headers], body: dataRows });
+            doc.save('transactions.pdf');
+        };
+
+        window.generateExcel = function() {
+            let selected = Array.from(document.querySelectorAll('#fieldChecklist input:checked')).map(cb => cb.value);
+            const order = ['Company Name','GSTIN Number','Bank Account Number','Transaction Date','Transaction Type','Party Name','Category','Amount','Narration','Status'];
+            selected = order.filter(f => selected.includes(f));
+
+            let data = [selected.map(f => {
+                if(f==='Company Name') return 'Company';
+                if(f==='GSTIN Number') return 'GSTIN';
+                if(f==='Bank Account Number') return 'Bank A/c';
+                if(f==='Transaction Date') return 'Date';
+                if(f==='Transaction Type') return 'Type';
+                if(f==='Party Name') return 'Party';
+                return f;
+            })];
+
+            transactions.forEach(t => {
+                let row = [];
+                selected.forEach(f => {
+                    if(f==='Company Name') row.push('Acme Corp');
+                    else if(f==='GSTIN Number') row.push('27AAPFU1234M1Z');
+                    else if(f==='Bank Account Number') row.push('1234567890');
+                    else if(f==='Transaction Date') row.push(t.date);
+                    else if(f==='Transaction Type') row.push(t.type);
+                    else if(f==='Party Name') row.push(t.party);
+                    else if(f==='Category') row.push(t.category);
+                    else if(f==='Amount') row.push(t.amount);
+                    else if(f==='Narration') row.push(t.narration||'');
+                    else if(f==='Status') row.push(t.status);
+                });
+                data.push(row);
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+            XLSX.writeFile(wb, 'transaction_report.xlsx');
+        };
+
+        // ---------- ENHANCED NAVIGATION: show page AND scroll to target ----------
+        window.showAndScrollTo = function(pageId, elementId) {
+            // hide any active pages and show the target
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            const targetPage = document.getElementById(pageId);
+            targetPage.classList.add('active');
+            
+            // render all data first so content exists
+            renderAll();
+
+            // small delay to ensure DOM is updated, then scroll to the desired element inside the page
+            setTimeout(() => {
+                const scrollTarget = document.getElementById(elementId);
+                if (scrollTarget) {
+                    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // fallback: scroll to page header
+                    targetPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        };
+
+        window.returnToDashboard = () => {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // add transaction
+        window.addTransaction = (e) => {
+            e.preventDefault();
+            transactions.push({
+                date: document.getElementById('addDate').value,
+                type: document.getElementById('addType').value,
+                party: document.getElementById('addParty').value,
+                category: document.getElementById('addCategory').value,
+                amount: parseFloat(document.getElementById('addAmount').value),
+                status: 'Pending',
+                narration: document.getElementById('addNarration').value,
+            });
+            renderAll(); document.getElementById('addForm').reset(); alert('✅ Added (pending)');
+        };
+
+        // edit rejected
+        window.openEditRejected = (idx) => {
+            let t = transactions[idx];
+            document.getElementById('editIndex').value = idx;
+            document.getElementById('editDate').value = t.date;
+            document.getElementById('editAmount').value = t.amount;
+            document.getElementById('editType').value = t.type;
+            document.getElementById('editParty').value = t.party;
+            document.getElementById('editCategory').value = t.category;
+            document.getElementById('editNarration').value = t.narration || '';
+            document.getElementById('editFormContainer').style.display = 'block';
+            // scroll to edit form after a tiny delay
+            setTimeout(() => {
+                document.getElementById('editFormContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        };
+        window.updateRejectedTransaction = (e) => {
+            e.preventDefault();
+            let idx = document.getElementById('editIndex').value;
+            transactions[idx] = {
+                date: document.getElementById('editDate').value,
+                type: document.getElementById('editType').value,
+                party: document.getElementById('editParty').value,
+                category: document.getElementById('editCategory').value,
+                amount: parseFloat(document.getElementById('editAmount').value),
+                status: 'Pending',
+                narration: document.getElementById('editNarration').value,
+            };
+            renderAll(); document.getElementById('editFormContainer').style.display = 'none'; alert('✏️ Resubmitted (pending)');
+        };
+
+        // live preview on checkbox change
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAll();
+            document.getElementById('fieldChecklist')?.addEventListener('change', renderReportPreview);
+        });
+    </script>
+</body>
+</html>
